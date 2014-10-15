@@ -1,6 +1,7 @@
 #include <SFML/Graphics.hpp>
 #include <vector>
 #include <ctime>
+#include <sstream>
 #include <iostream>
 
 enum GAME_STATE {PLAYING, MENU};
@@ -19,23 +20,25 @@ struct food{
 
 std::vector<snake_segment> snake_segments;
 
-void init(){
-  snake_segments.push_back(snake_segment(1,3));
-}
-
 int main(){
-  sf::RenderWindow window(sf::VideoMode(800,600), "Snake");
+  sf::RenderWindow window(sf::VideoMode(320,320),"Snake", sf::Style::Close);
+  window.setFramerateLimit(60);
   srand(time(0));
-  init();
   
   sf::Texture tileset;
   tileset.loadFromFile("data/graphic.png");
   
   sf::Sprite spr_snake_seg(tileset);
-  spr_snake_seg.setTextureRect(sf::IntRect(0,0,32,32));
+  spr_snake_seg.setTextureRect(sf::IntRect(0,0,16,16));
 
   sf::Sprite spr_food(tileset);
-  spr_food.setTextureRect(sf::IntRect(32,0,32,32));
+  spr_food.setTextureRect(sf::IntRect(32,0,16,16));
+  
+  sf::Font font;
+  font.loadFromFile("data/Russo_One.ttf");
+  
+  sf::Text txt_score;
+  txt_score.setFont(font);
 
   GAME_STATE game_state;
   game_state = GAME_STATE::MENU;
@@ -72,12 +75,13 @@ int main(){
 	   dir = DIRECTION::EAST;
        }
        
-       /*if(snake_segments[0].x + dir_x < 0 || snake_segments[0].x + dir_y > 20 ||
-	  snake_segments[0].y + dir_y < 0 || snake_segments[0].y + dir_y > 20){
+       if(snake_segments.front().x < 0 || snake_segments.front().x > 20 ||
+	  snake_segments.front().y < 0 || snake_segments.front().y > 20){
 	 game_state = GAME_STATE::MENU;
-	 }*/
+       }
        
-       if(game_clock.getElapsedTime() > sf::milliseconds(500)){
+
+       if(game_clock.getElapsedTime() > sf::milliseconds(400)){
 
 	 if(foods.x == snake_segments.front().x &&
 	    foods.y == snake_segments.front().y){
@@ -85,15 +89,16 @@ int main(){
 
 	   snake_segments.push_back(snake_segment(0,0));
 
-	   foods.x = rand()%10+1;
-	   foods.y = rand()%10+1;
+	   foods.x = rand()%19+1;
+	   foods.y = rand()%19+1;
+	   foods.points = rand()%20+1;
 	 }
 	 
 	 for(size_t i = snake_segments.size(); i-- > 1;){
 	     snake_segments[i].x = snake_segments[i-1].x;
 	     snake_segments[i].y = snake_segments[i-1].y;
 	 }
-	 
+
 	 switch(dir){
 	 case DIRECTION::NORTH:
 	   snake_segments.front().y -= 1;
@@ -108,22 +113,41 @@ int main(){
 	   snake_segments.front().x += 1;
 	 }
 	 game_clock.restart();
+       } 
+
+       for(size_t i = 1; i < snake_segments.size(); i++){
+	 if(snake_segments.front().x == snake_segments[i].x &&
+	    snake_segments.front().y == snake_segments[i].y){
+	   game_state = GAME_STATE::MENU;
+	 }
        }
 
+       /**< showing score */
+       std::ostringstream _score_string;
+       _score_string << score;
+
+       txt_score.setString( _score_string.str());
+       sf::FloatRect textRect = txt_score.getLocalBounds();
+       txt_score.setOrigin(textRect.left + textRect.width/2.0f,
+			   textRect.top  + textRect.height/2.0f);
+       txt_score.setPosition(sf::Vector2f(400,textRect.top  + textRect.height/2.0f + 10));
 
        //DRAWING
-       window.clear();
+       window.clear(sf::Color::Blue);
        for(size_t i = 0; i < snake_segments.size(); i++){
-	 spr_snake_seg.setPosition(snake_segments[i].x * 32, snake_segments[i].y * 32);
+	 spr_snake_seg.setPosition(snake_segments[i].x * 16, snake_segments[i].y * 16);
 	 window.draw(spr_snake_seg);
        }
-       spr_food.setPosition(foods.x * 32, foods.y * 32);
+       spr_food.setPosition(foods.x * 16, foods.y * 16);
        window.draw(spr_food);
+       window.draw(txt_score);
        window.display();
      } //if:GAME_STATE::PLAY
      if(game_state == GAME_STATE::MENU){
        if(sf::Keyboard::isKeyPressed(sf::Keyboard::E)){
 	 game_state = GAME_STATE::PLAYING;
+	 snake_segments.clear();
+	 snake_segments.push_back(snake_segment(5,5));
        }
 
        window.clear();
