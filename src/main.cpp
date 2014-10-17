@@ -21,10 +21,13 @@ struct food{
 std::vector<snake_segment> snake_segments;
 
 int main(){
+  // Creating window
   sf::RenderWindow window(sf::VideoMode(320,320),"Snake", sf::Style::Close);
   window.setFramerateLimit(60);
+  
   srand(time(0));
   
+  // graphics for snake and food
   sf::Texture tileset;
   tileset.loadFromFile("data/graphic.png");
   
@@ -34,11 +37,17 @@ int main(){
   sf::Sprite spr_food(tileset);
   spr_food.setTextureRect(sf::IntRect(32,0,16,16));
   
+  // game font
   sf::Font font;
   font.loadFromFile("data/Russo_One.ttf");
   
   sf::Text txt_score;
   txt_score.setFont(font);
+  txt_score.setCharacterSize(40);
+
+  sf::Text txt_menu;
+  txt_menu.setFont(font);
+  txt_menu.setString("To play type e.\nControls: WSAD");
 
   GAME_STATE game_state;
   game_state = GAME_STATE::MENU;
@@ -49,7 +58,8 @@ int main(){
 
   sf::Clock game_clock;
   int score = 0;
-
+  
+  // main loop
   while(window.isOpen()){
      sf::Event event;
      while (window.pollEvent(event)){
@@ -57,6 +67,7 @@ int main(){
        if (event.type == sf::Event::Closed)
 	 window.close();
      }
+     // let's play
      if(game_state == GAME_STATE::PLAYING){
        if(sf::Keyboard::isKeyPressed(sf::Keyboard::W)){
 	 if(dir != DIRECTION::SOUTH)
@@ -75,14 +86,16 @@ int main(){
 	   dir = DIRECTION::EAST;
        }
        
+       // collision with borders
        if(snake_segments.front().x < 0 || snake_segments.front().x > 20 ||
 	  snake_segments.front().y < 0 || snake_segments.front().y > 20){
 	 game_state = GAME_STATE::MENU;
        }
        
-
+       // update snake one per 0.4 second
        if(game_clock.getElapsedTime() > sf::milliseconds(400)){
-
+	 
+	 // collision with food
 	 if(foods.x == snake_segments.front().x &&
 	    foods.y == snake_segments.front().y){
 	   score += foods.points;
@@ -94,11 +107,13 @@ int main(){
 	   foods.points = rand()%20+1;
 	 }
 	 
+	 // move rest segments of snake
 	 for(size_t i = snake_segments.size(); i-- > 1;){
 	     snake_segments[i].x = snake_segments[i-1].x;
 	     snake_segments[i].y = snake_segments[i-1].y;
 	 }
-
+	 
+	 // move head of snake
 	 switch(dir){
 	 case DIRECTION::NORTH:
 	   snake_segments.front().y -= 1;
@@ -114,7 +129,8 @@ int main(){
 	 }
 	 game_clock.restart();
        } 
-
+       
+       // check collision head with another segments
        for(size_t i = 1; i < snake_segments.size(); i++){
 	 if(snake_segments.front().x == snake_segments[i].x &&
 	    snake_segments.front().y == snake_segments[i].y){
@@ -122,7 +138,7 @@ int main(){
 	 }
        }
 
-       /**< showing score */
+       // shownig score
        std::ostringstream _score_string;
        _score_string << score;
 
@@ -130,17 +146,17 @@ int main(){
        sf::FloatRect textRect = txt_score.getLocalBounds();
        txt_score.setOrigin(textRect.left + textRect.width/2.0f,
 			   textRect.top  + textRect.height/2.0f);
-       txt_score.setPosition(sf::Vector2f(400,textRect.top  + textRect.height/2.0f + 10));
+       txt_score.setPosition(sf::Vector2f(160,textRect.top  + textRect.height/2.0f + 160));
 
        //DRAWING
        window.clear(sf::Color::Blue);
+       window.draw(txt_score);
        for(size_t i = 0; i < snake_segments.size(); i++){
 	 spr_snake_seg.setPosition(snake_segments[i].x * 16, snake_segments[i].y * 16);
 	 window.draw(spr_snake_seg);
        }
        spr_food.setPosition(foods.x * 16, foods.y * 16);
        window.draw(spr_food);
-       window.draw(txt_score);
        window.display();
      } //if:GAME_STATE::PLAY
      if(game_state == GAME_STATE::MENU){
@@ -148,9 +164,17 @@ int main(){
 	 game_state = GAME_STATE::PLAYING;
 	 snake_segments.clear();
 	 snake_segments.push_back(snake_segment(5,5));
+	 score = 0;
        }
+       
+       
+       std::ostringstream _score_string;
+       _score_string << score;
+
+       txt_menu.setString("Type e to play.\nControls: WSAD.\nLast score: " +  _score_string.str());
 
        window.clear();
+       window.draw(txt_menu);
        window.display();
      } //if:GAME_STATE::MENU
   }
